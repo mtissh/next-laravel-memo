@@ -10,7 +10,6 @@ type Memo = {
     body: string;
 };
 
-
 const Memo: NextPage = () => {
     const router = useRouter();
 
