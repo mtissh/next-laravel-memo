@@ -12,7 +12,11 @@ type LoginForm = {
 }
 
 // バリデーションメッセージの型
-type Validation = LoginForm & { loginFailed: string };
+type Validation = {
+  email?: string;
+  password?: string;
+  loginFailed?: string;
+};
 
 const Home: NextPage = () => {
 
@@ -25,11 +29,7 @@ const Home: NextPage = () => {
   });
 
   // バリデーションメッセージのstate
-  const [validation, setValidation] = useState<Validation>({
-    email: "",
-    password: "",
-    loginFailed: "",
-  });
+  const [validation, setValidation] = useState<Validation>({});
 
   // POSTデータの更新
   const updateLoginForm = (e: ChangeEvent<HTMLInputElement>) => {
@@ -38,17 +38,36 @@ const Home: NextPage = () => {
 
   // ログイン
   const login = () => {
+
+    // バリデーションメッセージ初期化
+    setValidation({});
     axiosApi
         .get('/sanctum/csrf-cookie')  // csrf保護の初期化
         .then((res: AxiosResponse) => {
           axiosApi  // ログイン処理
               .post('/api/login', loginForm)
               .then((res:AxiosResponse) => {
-                console.log(res.data);
                 router.push('/memos');
               })
               .catch((err: AxiosError) => {
-                console.log(err.response);
+                if (err.response?.status === 422){
+                  // APIから返却されたバリデーションメッセージを変数に格納（長いので）
+                  // @ts-ignore
+                  const errors = err.response?.data.errors;
+                  // state更新用オブジェクト定義（keyがstring, valueもstring）
+                  const validationMessages: { [index: string]: string } = {} as Validation;
+                  /*
+                  Object.keys(errors) で、↑ のオブジェクトのkeyで構成された配列を作成、
+                  state更新用オブジェクトをローカルstate（validation）と同じ形に更新。
+                  */
+                  Object.keys(errors).map((key: string) => {
+                    validationMessages[key] = errors[key][0];
+                  });
+                  setValidation(validationMessages);
+                }
+                if (err.response?.status === 500){
+                  console.log('エラー');
+                }
               });
         });
   };
@@ -68,7 +87,9 @@ const Home: NextPage = () => {
             value={loginForm.email}
             onChange={updateLoginForm}
           />
-          {/* <p className='py-3 text-red-500'>必須入力です。</p> */}
+          {validation.email &&
+              (<p className='py-3 text-red-500'>{validation.email}</p>)
+          }
         </div>
         <div className='mb-5'>
           <div className='flex justify-start my-2'>
@@ -85,14 +106,10 @@ const Home: NextPage = () => {
             value={loginForm.password}
             onChange={updateLoginForm}
           />
-          {/* <p className='py-3 text-red-500'>
-            8文字以上の半角英数字で入力してください。
-          </p> */}
+          {validation.password && (<p className='py-3 text-red-500'>{validation.password}</p>)}
         </div>
         <div className='text-center mt-12'>
-          {/* <p className='py-3 text-red-500'>
-            IDまたはパスワードが間違っています。
-          </p> */}
+          {validation.loginFailed && (<p className='py-3 text-red-500'>{validation.loginFailed}</p>)}
           <button
               className='bg-gray-700 text-gray-50 py-3 sm:px-20 px-10 rounded-xl cursor-pointer drop-shadow-md hover:bg-gray-600'
               onClick={login}
