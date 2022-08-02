@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class MemoPostRequest extends FormRequest
 {
@@ -34,5 +35,11 @@ class MemoPostRequest extends FormRequest
         return [
             'required' => '必須入力です。',
         ];
+    }
+
+    protected function prepareForValidation()
+    {
+        // ログイン中のユーザのIDを新規メモに紐付け
+        $this->merge(['user_id' => Auth::id()]);
     }
 }

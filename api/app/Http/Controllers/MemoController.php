@@ -40,9 +40,10 @@ class MemoController extends Controller
      * メモの登録
      * @param MemoPostRequest $request
      * @return JsonResponse
+     * @throws Exception
      */
     public function create(MemoPostRequest $request): JsonResponse
     {
-        // 処理
+        return $this->memo->register($request->all());
     }
 }
